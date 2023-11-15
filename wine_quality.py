@@ -361,12 +361,12 @@ print("X_t:", X_t.shape)
 x_train, x_test, y_train, y_test = train_test(X_t, y)
 
 
-# lr = LogisticRegression()
+# lr = LogisticRegression(verbose=True)
 # print('running LR classification')
 # apply_classification('Logistic_Regression', lr,
 #                      x_train, x_test, y_train, y_test)
 
-svm = SVC(gamma='auto')
+svm = SVC(gamma='auto', verbose=True)
 print('running SVM classification')
 apply_classification('SVM', svm, x_train, x_test, y_train, y_test)
 
@@ -381,7 +381,7 @@ dot_data = export_graphviz(dt_clf, out_file=None,
 graph = graphviz.Source(dot_data)
 graph
 
-rf = RandomForestClassifier(n_estimators=100)
+rf = RandomForestClassifier(n_estimators=100, verbose=True)
 print('running RF classification')
 apply_classification('Random_Forest', rf, x_train, x_test, y_train, y_test)
 

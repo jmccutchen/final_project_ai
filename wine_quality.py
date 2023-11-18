@@ -83,7 +83,7 @@ print('Totals after cleaning: \n', df.shape)
 
 warnings.filterwarnings('ignore')
 
-# # show histplot for each column
+# show histplot for each column
 # plt.figure(figsize=(15, 10))
 # plot_num = 1
 # for i in df.columns:
@@ -93,23 +93,23 @@ warnings.filterwarnings('ignore')
 # plt.tight_layout()
 # plt.show()
 
-# # correlation map
-# # -1 means: There is a negative relationship between dependent and independent variables .
-# # 0 means: There is no relationship between dependent and independent variables .
-# # 1 means: There is a positive relationship between dependent and independent variables .
-# # According to this information, it can be made a good analysis about dataset and columns.
+# correlation map
+# -1 means: There is a negative relationship between dependent and independent variables .
+# 0 means: There is no relationship between dependent and independent variables .
+# 1 means: There is a positive relationship between dependent and independent variables .
+# According to this information, it can be made a good analysis about dataset and columns.
 # df.corr()
 # f, ax = plt.subplots(figsize=(10, 10))
 # sns.heatmap(df.corr(), annot=True, linewidths=.5, fmt=".2f", ax=ax)
 # plt.show()
 
-# # show multivariate analysis
+# show multivariate analysis
 # sns.pairplot(df, hue='quality', height=3)
 # plt.tight_layout()
 # plt.show()
 
-# # show scatterplot analysis
-# fig, axes = plt.subplots(11, 11, figsize=(25, 25))
+# show scatterplot analysis
+# fig, axes = plt.subplots(11, 11, figsize=(15, 15))
 # for i in range(11):
 #     for j in range(11):
 #         axes[i, j].scatter(df.iloc[:, i], df.iloc[:, j], c=df.quality)
@@ -232,7 +232,7 @@ def grid_search(name_clf, clf, x_train, x_test, y_train, y_test):
         # We automatically get the logistic regression with the best parameters.
         log_reg = grid_log_reg.best_estimator_
         print("Best Parameters for Logistic Regression: ",
-              grid_log_reg.best_estimator_)
+              log_reg)
         print("Best Score for Logistic Regression: ", grid_log_reg.best_score_)
         print("------------------------------------------")
         return log_reg
@@ -342,6 +342,12 @@ def apply_classification(name_clf, clf, x_train, x_test, y_train, y_test):
     clf1_accuracy = sum(y_test == clf_prediction)/len(y_test)
     print("Accuracy of", name_clf, ":", clf1_accuracy*100)
 
+    # print ROC curve for each model
+    y_score_rfc = grid_clf.predict_proba(x_test)[:, 1]
+    fpr_rf, tpr_rf, _ = roc_curve(y_test, y_score_rfc, pos_label=1)
+    roc_auc_forests = auc(fpr_rf, tpr_rf)
+    print(f"ROC Curve of {name_clf}:", roc_auc_forests)
+
     # print confusion matrix and accuracy score before best parameters
     clf1_conf_matrix = confusion_matrix(y_test, clf_prediction)
     print("Confusion matrix of", name_clf, ":\n", clf1_conf_matrix)
@@ -361,16 +367,25 @@ print("X_t:", X_t.shape)
 x_train, x_test, y_train, y_test = train_test(X_t, y)
 
 
-# lr = LogisticRegression(verbose=True)
-# print('running LR classification')
-# apply_classification('Logistic_Regression', lr,
-#                      x_train, x_test, y_train, y_test)
+lr = LogisticRegression()  # verbose=True
+lr.fit(x_train, y_train)
+y_pred_log = lr.predict(x_test)
+lr_precision, lr_recall, _ = precision_recall_curve(
+    y_test, y_pred_log, pos_label=1)
+print('running LR classification')
+apply_classification('Logistic_Regression', lr,
+                     x_train, x_test, y_train, y_test)
 
-svm = SVC(gamma='auto', verbose=True)
-print('running SVM classification')
-apply_classification('SVM', svm, x_train, x_test, y_train, y_test)
+
+# svm = SVC(gamma='auto', verbose=True)
+# print('running SVM classification')
+# apply_classification('SVM', svm, x_train, x_test, y_train, y_test)
 
 dt = DecisionTreeClassifier()
+dt.fit(x_train, y_train)
+y_pred_log = dt.predict(x_test)
+dt_precision, dt_recall, _ = precision_recall_curve(
+    y_test, y_pred_log, pos_label=1)
 print('running DT classification')
 dt_clf = apply_classification(
     'Decision_Tree', dt, x_train, x_test, y_train, y_test)
@@ -382,8 +397,52 @@ graph = graphviz.Source(dot_data)
 graph
 
 rf = RandomForestClassifier(n_estimators=100, verbose=True)
+rf.fit(x_train, y_train)
+y_pred_log = rf.predict(x_test)
+rf_precision, rf_recall, _ = precision_recall_curve(
+    y_test, y_pred_log, pos_label=1)
 print('running RF classification')
 apply_classification('Random_Forest', rf, x_train, x_test, y_train, y_test)
+
+# Precision recall curves analysis
+
+no_skill = len(y_test[y_test == 1]) / len(y_test)
+
+t = np.arange(0, 110, 10)
+fig, ax = plt.subplots(figsize=(10, 6))
+ax.plot(dt_recall, dt_precision, linestyle='--',
+        color='b',  lw=2.0, label='DT')
+ax.plot(lr_recall, lr_precision, linestyle='--',
+        color='y',  lw=2.0, label='LR')
+ax.plot(rf_recall, rf_precision, linestyle='--',
+        color='m',  lw=2.0, label='RF')
+
+ax.plot([0, 1], [no_skill, no_skill], marker='.',
+        color='g', lw=2.0, label='No skill')
+
+plt.xlabel('Recall', fontsize=18)
+plt.ylabel('Precision', fontsize=18)
+plt.title('Precision-Recall curve', fontsize=18)
+plt.legend(loc='best', fontsize=18)
+ax.grid(True)
+ticklines = ax.get_xticklines() + ax.get_yticklines()
+gridlines = ax.get_xgridlines()
+ticklabels = ax.get_xticklabels() + ax.get_yticklabels()
+
+for line in ticklines:
+    line.set_linewidth(3)
+
+for line in gridlines:
+    line.set_linestyle('-')
+
+for line in gridlines:
+    line.set_linestyle('-')
+
+for label in ticklabels:
+    label.set_color('black')
+    label.set_fontsize('large')
+
+plt.show()
 
 ##### Binary dataset analysis ##############################################
 # Add a new feature according to mean of the quality

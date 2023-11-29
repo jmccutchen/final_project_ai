@@ -1,7 +1,5 @@
 import numpy as np
 import pandas as pd
-from pandas.plotting import scatter_matrix
-from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import learning_curve
@@ -9,16 +7,12 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import ShuffleSplit
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier, export_graphviz
-from sklearn import tree
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import precision_recall_curve
 from sklearn.metrics import auc
 from sklearn.metrics import roc_curve
-from sklearn.metrics import accuracy_score
-from sklearn.svm import SVC
 import matplotlib.pyplot as plt
 import seaborn as sns
 import warnings
@@ -91,10 +85,7 @@ plt.tight_layout()
 plt.show()
 
 # correlation map
-# -1 means: There is a negative relationship between dependent and independent variables .
-# 0 means: There is no relationship between dependent and independent variables .
-# 1 means: There is a positive relationship between dependent and independent variables .
-# According to this information, it can be made a good analysis about dataset and columns.
+
 df.corr()
 f, ax = plt.subplots(figsize=(10, 10))
 sns.heatmap(df.corr(), annot=True, linewidths=.5, fmt=".2f", ax=ax)
@@ -131,7 +122,7 @@ fig, ax1 = plt.subplots(4, 3, figsize=(22, 16))
 k = 0
 for i in range(4):
     for j in range(3):
-        if k != 12:
+        if k != 11:
             sns.barplot(y=df.iloc[:, k], x='quality',
                         data=df, ax=ax1[i][j])
             k += 1
@@ -152,9 +143,7 @@ plt.show()
 
 ##################################  Models- Classification and Cross Validation ##################################
 
-# https://www.kaggle.com/code/sevilcoskun/red-wine-quality-classification?scriptVersionId=9749088&cellId=16
 
-# Normalization ==> x_norm = (x - mean)/std
 # it gives for each value the same value intervals means between 0-1
 def normalization(X):
     mean = np.mean(X)
@@ -188,20 +177,8 @@ def grid_search(name_clf, clf, x_train, x_test, y_train, y_test):
               log_reg)
         print("Best Score for Logistic Regression: ", grid_log_reg.best_score_)
         print("------------------------------------------")
-        return log_reg
 
-    elif name_clf == 'SVM':
-        # Support Vector Classifier
-        svc_params = {'C': [0.0001, 0.001, 0.01, 0.1, 1.0, 10.0, 100.0, 1000.0],
-                      'kernel': ['rbf', 'poly', 'sigmoid', 'linear']}
-        grid_svc = GridSearchCV(SVC(), svc_params)
-        grid_svc.fit(x_train, y_train)
-        # SVC best estimator
-        svc = grid_svc.best_estimator_
-        print("Best Parameters for SVM: ", grid_svc.best_estimator_)
-        print("Best Score for SVM: ", grid_svc.best_score_)
-        print("------------------------------------------")
-        return svc
+        return log_reg
 
     elif name_clf == 'Decision_Tree':
         # DecisionTree Classifier
@@ -342,9 +319,9 @@ dt_clf = apply_classification(
 dot_data = export_graphviz(dt_clf, out_file=None,
                            filled=True, rounded=True, special_characters=True)
 graph = graphviz.Source(dot_data)
-# graph.view()
+graph
 
-rf = RandomForestClassifier(n_estimators=100, verbose=True)
+rf = RandomForestClassifier(n_estimators=100)  # , verbose=True
 rf.fit(x_train, y_train)
 y_pred_log = rf.predict(x_test)
 rf_precision, rf_recall, _ = precision_recall_curve(
@@ -393,6 +370,7 @@ for label in ticklabels:
 plt.show()
 
 ##### Binary dataset analysis ##############################################
+
 # Add a new feature according to mean of the quality
 # Good wine represented by 1, bad wine represented by 0
 df['value'] = ""
@@ -478,7 +456,7 @@ apply_classification('Random_Forest', rf, xb_train,
 dot_data = export_graphviz(dtb_clf, out_file=None,
                            filled=True, rounded=True, special_characters=True)
 graph = graphviz.Source(dot_data)
-# graph.view()
+graph
 
 # Precision recall curves analysis
 
@@ -519,80 +497,3 @@ for label in ticklabels:
     label.set_fontsize('large')
 
 plt.show()
-
-
-# ##### Categorical analysis ##############################################
-
-# # Add a new feature according to mean of the quality
-# # Good wine represented by 2, average 1, and bad wine represented by 0
-# df['value'] = ""
-# df['value'] = [2 if each > 6 else 1 if (
-#     (each > 4) and (each < 7)) else 0 for each in df['quality']]
-
-# print("Good Wine Class:", df[df['value'] == 2].shape)
-# print("Average Wine Class:", df[df['value'] == 1].shape)
-# print("Bad Wine Class:", df[df['value'] == 0].shape)
-
-# # Check the outliers for each feature with respect to output value
-# fig, ax1 = plt.subplots(4, 3, figsize=(22, 16))
-# k = 0
-# for i in range(4):
-#     for j in range(3):
-#         if k != 11:
-#             sns.boxplot(x='value', y=df.iloc[:, k], data=df, ax=ax1[i][j])
-#             k += 1
-# plt.show()
-
-# # Categorical distribution plots:
-# fig, ax1 = plt.subplots(4, 3, figsize=(22, 16))
-# k = 0
-# for i in range(4):
-#     for j in range(3):
-#         if k != 11:
-#             sns.barplot(x="value", y=df.iloc[:, k],
-#                         hue='value', data=df, ax=ax1[i][j])
-#             k += 1
-# plt.show()
-
-# fig, axes = plt.subplots(11, 11, figsize=(50, 50))
-# for i in range(11):
-#     for j in range(11):
-#         axes[i, j].scatter(df.iloc[:, i], df.iloc[:, j], c=df.value)
-#         axes[i, j].set_xlabel(df.columns[i])
-#         axes[i, j].set_ylabel(df.columns[j])
-#         axes[i, j].legend(df.value)
-# plt.show()
-
-# # Now seperate the dataset as response variable and feature variabes
-# X3 = df.drop(['quality', 'value'], axis=1)
-# # y = pd.DataFrame(data['value'])
-# y3 = df['value']
-
-# # Normalization
-# X3_t = normalization(X3)
-# print("X_t:", X3_t.shape)
-
-# # Train and Test splitting of data
-# x3_train, x3_test, y3_train, y3_test = train_test(X3_t, y3)
-
-# # Apply all previous classification algorithms
-# lr3 = LogisticRegression()
-# apply_classification('Logistic_Regression', lr3,
-#                      x3_train, x3_test, y3_train, y3_test)
-
-# svm3 = SVC()
-# apply_classification('SVM', svm3, x3_train, x3_test, y3_train, y3_test)
-
-# dt3 = DecisionTreeClassifier()
-# dt3_clf = apply_classification(
-#     'Decision_Tree', dt3, x3_train, x3_test, y3_train, y3_test)
-
-# rf3 = RandomForestClassifier(n_estimators=100)
-# apply_classification('Random_Forest', rf3, x3_train,
-#                      x3_test, y3_train, y3_test)
-
-# # Plot the decision tree
-# dot_data = export_graphviz(dt3_clf, out_file=None,
-#                            filled=True, rounded=True, special_characters=True)
-# graph = graphviz.Source(dot_data)
-# print(graph)
